@@ -51,14 +51,12 @@ def main():
         logging.error('Ошибка: не найден TELEGRAM_BOT_TOKEN')
         return
     
-    # Новая версия библиотеки требует указать connect() вручную
-    application = ApplicationBuilder().token(token).build()
+    app = ApplicationBuilder().token(token).build()
+    app.add_handler(CommandHandler('start', start))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
-    application.add_handler(CommandHandler('start', start))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    
-    # Для Python 3.14+ используем run_polling()
-    application.run_polling()
+    logging.info('Данилевский запущен')
+    app.run_polling()
 
 if __name__ == '__main__':
     main()
