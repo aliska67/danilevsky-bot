@@ -4,7 +4,6 @@ import logging
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
-# Включаем логи, чтобы видеть ошибки
 logging.basicConfig(level=logging.INFO)
 
 # Загружаем чанки
@@ -14,13 +13,13 @@ try:
         KNOWLEDGE_BASE = data['knowledge_base']
     logging.info(f"Загружено {len(KNOWLEDGE_BASE)} чанков")
 except Exception as e:
-    logging.error(f"Ошибка загрузки knowledge_base.json: {e}")
+    logging.error(f"Ошибка загрузки: {e}")
     KNOWLEDGE_BASE = []
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         'Здравствуйте. Я Николай Яковлевич Данилевский, автор книги "Россия и Европа".\n\n'
-        'Спрашивайте. Буду отвечать прямо, как в моём сочинении. Европе это не понравится, но мне всё равно.'
+        'Спрашивайте. Буду отвечать прямо, как в моём сочинении.'
     )
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -30,10 +29,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     max_score = 0
     
     for chunk in KNOWLEDGE_BASE:
-        score = 0
-        for kw in chunk.get('keywords', []):
-            if kw.lower() in user_text:
-                score += 1
+        score = sum(1 for kw in chunk.get('keywords', []) if kw.lower() in user_text)
         if score > max_score:
             max_score = score
             best_chunk = chunk
@@ -45,8 +41,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(answer)
     else:
         await update.message.reply_text(
-            'Сударь, в моей книге "Россия и Европа" я подробно разобрал этот вопрос. '
-            'Почитайте главы о культурно-исторических типах или спросите про двойные стандарты Европы, всеславянскую федерацию, Царьград.'
+            'Сударь, в моей книге "Россия и Европа" я подробно разобрал этот вопрос.\n\n'
+            'Попробуйте спросить про: двойные стандарты Европы, всеславянскую федерацию, Царьград, православие, европейничанье.'
         )
 
 def main():
@@ -55,12 +51,14 @@ def main():
         logging.error('Ошибка: не найден TELEGRAM_BOT_TOKEN')
         return
     
-    app = ApplicationBuilder().token(token).build()
-    app.add_handler(CommandHandler('start', start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    # Новая версия библиотеки требует указать connect() вручную
+    application = ApplicationBuilder().token(token).build()
     
-    logging.info('Данилевский запущен. Спрашивайте.')
-    app.run_polling()
+    application.add_handler(CommandHandler('start', start))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    
+    # Для Python 3.14+ используем run_polling()
+    application.run_polling()
 
 if __name__ == '__main__':
     main()
